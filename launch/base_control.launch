@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<launch>
+    <param name="PPR" value= "4700"></param>
+    <param name="wheel_radius" value="0.0325"/>
+
+    <param name='kp' value='0.35'/>
+    <param name='ki' value='0.48'/>
+    <param name='kd' value='0.0'/>
+
+    <rosparam file="$(find mobile_robot_base)/config/controllers.yaml" command="load" />
+    <rosparam file="$(find mobile_robot_base)/config/joint_limits.yaml" command="load" />
+    <arg name='gazebo' default="false" /> 
+<!--
+    <arg name="model" default="$(find mobile_robot_description)/urdf/mobile_robot.urdf.xacro" />
+    <arg name="model" default="$(find mobile_robot_description)/xacro/unobot.xacro" />
+-->
+    
+    <arg name="model" default="$(find chefbot_description)/urdf/kbot.xacro" />
+
+    <param name="robot_description" command="$(find xacro)/xacro $(arg model)" />
+
+    <node name="robot_hardware_interface" pkg="mobile_robot_base" type="unobot_hardware_interface" output="screen">
+        <!--<param name="~PPR" value= "1170"></param> -->
+        <remap from="/mobile_robot/mobile_base_controller/cmd_vel" to="/cmd_vel" /> 
+    </node>
+
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"></node>
+
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find mobile_robot_base)/config/odom.rviz" />
+
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen"
+        args="
+        	/mobile_robot/joints_update
+            /mobile_robot/mobile_base_controller">
+    </node>
+
+    <!--<node name="telop" pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py"/>-->
+
+    <node pkg="rosserial_python" type="serial_node.py" name="serial_node">
+        <param name="port" value="/dev/ttyUSB0"/>
+        <param name="baud" value="57600"/>
+    </node>
+    <!-- <include file='$(find mobile_robot)/launch/teleop.launch'/> -->
+</launch>
