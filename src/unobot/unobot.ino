@@ -66,7 +66,7 @@ ros::NodeHandle_<ArduinoHardware, 2, 2, 128, 128> nh;
 
 std_msgs::Float32 lDeg;
 std_msgs::Float32 rDeg;
-// rospy_tutorials::Floats deg; 
+// rospy_tutorials::Floats deg;
 ros::Publisher lDegPub("/lwheel_deg", &lDeg);
 ros::Publisher rDegPub("/rwheel_deg", &rDeg);
 
@@ -82,19 +82,19 @@ ros::Publisher rDegPub("/rwheel_deg", &rDeg);
 ros::Subscriber<rospy_tutorials::Floats> motor_sub("/motor_cmd", &motorCallBack);
 /* ros::Subscriber<std_msgs::Float32> lmotor_sub("lmotor_cmd", &lMotorCallBack);
 
-void lMotorCallBack(const std_msgs::Float32& motor_msg) {
+  void lMotorCallBack(const std_msgs::Float32& motor_msg) {
   // in deg/s
   lPwmOut(motor_msg.data);
   setpoint[0] = motor_msg.data;
-}
+  }
 */
 void motorCallBack(const rospy_tutorials::Floats& msg) {
   // setpoint is in degrees/s
   setpoint[0] = msg.data[0];
   setpoint[1] = msg.data[1];
- 
+
   // lPwmOut(msg.data[0]);
-  // rPwmOut(msg.data[1]); 
+  // rPwmOut(msg.data[1]);
 }
 
 void setup() {
@@ -107,10 +107,10 @@ void setup() {
   //nh.advertise(lPubTicks);
   //nh.advertise(rPubTicks);
   nh.advertise(lDegPub);
-  nh.advertise(rDegPub);  
- 
+  nh.advertise(rDegPub);
+
   // deg.data_length=2;
-  
+
   // for debug
   // nh.advertise(pub);
   // nh.advertise(pub_input);
@@ -130,7 +130,7 @@ void setup() {
   rPID.SetMode(QuickPID::AUTOMATIC);
   // rPID.SetSampleTime(100);
   rPID.SetOutputLimits(-255, 255);
-  setpoint[0] = setpoint[1] = 0;  
+  setpoint[0] = setpoint[1] = 0;
 }
 
 //int32_t lOldPosition = -999;
@@ -140,42 +140,43 @@ int32_t last_pos[2] = {0};
 
 void loop() {
   int32_t enc[2];
-  
-  enc[0] = -1 * lEnc.read();
-  enc[1] = rEnc.read();
 
   unsigned long now = millis();
   unsigned int duration = (now - lastTime);
+  // if not set to 100, rad/s won't reach to 3.0rad/s (i.e., 0.1m/s)
   if (duration >= 100 )
   {
+    enc[0] = -1 * lEnc.read();
+    enc[1] = rEnc.read();
+    lastTime = now;
+
     // deg.data_length=2;
-    lDeg.data = (float)(enc[0] - last_pos[0]) * DEG_PER_TICK;    
+    lDeg.data = (float)(enc[0] - last_pos[0]) * DEG_PER_TICK;
     lDegPub.publish(&lDeg);
-    rDeg.data = (float)(enc[1] - last_pos[1]) * DEG_PER_TICK;      
-    rDegPub.publish(&rDeg);    
-    
+    rDeg.data = (float)(enc[1] - last_pos[1]) * DEG_PER_TICK;
+    rDegPub.publish(&rDeg);
+
     // input[i] is in degree/s
     input[0] = 1000 * lDeg.data / duration;
     // feedback.data = input[0];
     // pub_input.publish(&feedback);
 
-    input[1] = 1000 * rDeg.data / duration;
-    lastTime = now;
+    input[1] = 1000.0 * rDeg.data / duration;
+
     last_pos[0] = enc[0];
     last_pos[1] = enc[1];
-    /*
+/*
     nh.getParam("kp", &kp);
     nh.getParam("ki", &ki);
     nh.getParam("kd", &kd);
     lPID.SetTunings(kp, ki, kd);
-    rPID.SetTunings(kp, ki, kd);    
-    */
-  } 
-   
-  lPID.Compute();
-  lPwmOut((int)output[0]);
-  rPID.Compute();
-  rPwmOut((int)output[1]);
+    rPID.SetTunings(kp, ki, kd);
+*/
+    lPID.Compute();
+    lPwmOut((int)output[0]);
+    rPID.Compute();
+    rPwmOut((int)output[1]);
+  }
 
   nh.spinOnce();
   // delay(10);
