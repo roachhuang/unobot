@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <Encoder.h>
-#include <QuickPID.h>
+#include <PID_v2.h>
 // #include <L298N.h>
 #include <ros.h>
 // #include <std_msgs/Int32.h>
@@ -29,11 +29,11 @@ const double PPR = 4680.0;
 const int WHEEL_RADIUS = 0.0325;
 const float DEG_PER_TICK = 360.0 / PPR;
 // float kp = 2.1, ki = 0.2 , kd = 0.5;          // modify for optimal performance
-float kp = 0.35, ki = 0.475 , kd = 0.0;          // modify for optimal performance
+double kp = 0.35, ki = 0.475 , kd = 0.0;          // modify for optimal performance
 
-float input[2] = {0}, output[2] = {0}, setpoint[2] = {0};
-QuickPID lPID(&input[0], &output[0], &setpoint[0], kp, ki, kd, QuickPID::DIRECT);
-QuickPID rPID(&input[1], &output[1], &setpoint[1], kp, ki, kd, QuickPID::DIRECT);
+double input[2] = {0}, output[2] = {0}, setpoint[2] = {0};
+PID lPID(&input[0], &output[0], &setpoint[0], kp, ki, kd, PID::P_On::Measurement, PID::Direct);
+PID rPID(&input[1], &output[1], &setpoint[1], kp, ki, kd, PID::P_On::Measurement, PID::Direct);
 
 void rPwmOut(int out) {
   // drive motor CW
@@ -116,20 +116,20 @@ void setup() {
   // nh.advertise(pub_input);
 
   nh.subscribe(motor_sub);
-  //nh.subscribe(lmotor_sub);
-
+ 
   setup_motors();
 
   lEnc.write(0);
   rEnc.write(0);
   // lPwmOut(100);
   // rPwmOut(100);
-  lPID.SetMode(QuickPID::AUTOMATIC);
-  // lPID.SetSampleTime(100);
+  
+  lPID.SetMode(PID::Automatic);
+  // lPID.SetSampleTime(50);  // default 100
   lPID.SetOutputLimits(-255, 255);
-  rPID.SetMode(QuickPID::AUTOMATIC);
-  // rPID.SetSampleTime(100);
+  rPID.SetMode(PID::Automatic); 
   rPID.SetOutputLimits(-255, 255);
+    
   setpoint[0] = setpoint[1] = 0;
 }
 
@@ -149,8 +149,7 @@ void loop() {
     enc[0] = -1 * lEnc.read();
     enc[1] = rEnc.read();
     lastTime = now;
-
-    // deg.data_length=2;
+    
     lDeg.data = (float)(enc[0] - last_pos[0]) * DEG_PER_TICK;
     lDegPub.publish(&lDeg);
     rDeg.data = (float)(enc[1] - last_pos[1]) * DEG_PER_TICK;
@@ -165,13 +164,13 @@ void loop() {
 
     last_pos[0] = enc[0];
     last_pos[1] = enc[1];
-/*
-    nh.getParam("kp", &kp);
-    nh.getParam("ki", &ki);
-    nh.getParam("kd", &kd);
-    lPID.SetTunings(kp, ki, kd);
-    rPID.SetTunings(kp, ki, kd);
-*/
+    /*
+        nh.getParam("kp", &kp);
+        nh.getParam("ki", &ki);
+        nh.getParam("kd", &kd);
+        lPID.SetTunings(kp, ki, kd);
+        rPID.SetTunings(kp, ki, kd);
+    */
     lPID.Compute();
     lPwmOut((int)output[0]);
     rPID.Compute();

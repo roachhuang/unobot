@@ -120,6 +120,8 @@ void MyRobot::read(ros::Time time, ros::Duration period)
 	double norm_rad;
 	ros::Duration elapsed_time = period;
 	double lastPos = pos[0];
+
+	ROS_INFO("hz: %f", period.toSec());
 	/*      
 	double wheel_angles[2];
 	double wheel_angle_deltas[2];
@@ -136,8 +138,7 @@ void MyRobot::read(ros::Time time, ros::Duration period)
 	for (int i = 0; i < 2; i++)
 	{
 		// note: no norm is required
-		rad[i] += angles::from_degrees((double)degs[i]);
-		// norm_rad = rad[i];
+		rad[i] += angles::from_degrees((double)degs[i]);		
 		// ticks[i] = 0; //reset it coz ticks' cb may be slower than read's loop rate
 		// rad/s
 		vel[i] = (rad[i] - pos[i]) / elapsed_time.toSec();
